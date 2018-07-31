@@ -90,18 +90,12 @@
         <version>4.12</version>
         <scope>test</scope>
       </dependency>
-<!--      <dependency>
-        <groupId>org.jboss.byteman</groupId>
-        <artifactId>byteman-bmunit</artifactId>
-        <version>4.0.3</version>
-        <scope>test</scope>
-      </dependency>
       <dependency>
         <groupId>com.github.stefanbirkner</groupId>
         <artifactId>system-rules</artifactId>
         <version>1.16.0</version>
         <scope>test</scope>
-      </dependency> -->
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -135,14 +129,10 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
     </dependency>
-<!--    <dependency>
-      <groupId>org.jboss.byteman</groupId>
-      <artifactId>byteman-bmunit</artifactId>
-    </dependency>
     <dependency>
       <groupId>com.github.stefanbirkner</groupId>
       <artifactId>system-rules</artifactId>
-    </dependency>-->
+    </dependency>
   </dependencies>
 
   <build>

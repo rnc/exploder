@@ -71,6 +71,8 @@ public class Exploder
      * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
      * It does NOT clean up.
      *
+     * @param root root file (or directory contents) to explode
+     * @throws InternalException if an error occurs.
      */
     public void unpack ( File root ) throws InternalException
     {
@@ -85,7 +87,7 @@ public class Exploder
      * @param processor the optional FileProcessor
      * @param working a working directory (e.g. a temporary directory to use).
      * @param root root file (or directory contents) to explode
-     * @throws InternalException
+     * @throws InternalException if an error occurs.
      */
     public void unpack( ExploderFileProcessor processor, File working, File root ) throws InternalException
     {
@@ -124,6 +126,9 @@ public class Exploder
      * It will use the specified ExploderFileProcessor on each target file.
      * It does NOT clean up.
      *
+     * @param processor the optional FileProcessor
+     * @param root root file (or directory contents) to explode
+     * @throws InternalException if an error occurs.
      */
     public void unpack( ExploderFileProcessor processor, File root ) throws InternalException
     {
@@ -150,19 +155,19 @@ public class Exploder
             {
                 if ( type.isArchive() )
                 {
-                    logger.info( "Unpacking {}", root );
+                    logger.debug( "Unpacking {}", root );
 
                     unpackArchive( root, type, processor );
                 }
                 else if ( type.isCompressed() )
                 {
-                    logger.info( "Decompressing {}", root );
+                    logger.debug( "Decompressing {}", root );
 
                     decompressFile ( root, type, processor );
                 }
                 else
                 {
-                    logger.info( "Found standard file {} ", root );
+                    logger.debug( "Found standard file {} ", root );
                 }
             }
             if ( processor != null )
@@ -179,7 +184,7 @@ public class Exploder
             File destination = new File( type.getUncompressedFilename( root ) );
             IOUtils.copy( c, Files.newOutputStream( destination.toPath() ) );
 
-            logger.info( "### Now examining decompressed file {} ", destination );
+            logger.debug( "Now examining decompressed file {} ", destination );
 
             // Examine unpacked file - that in itself may be an ordinary file or an archive etc.
             unpack( processor, destination );
@@ -219,7 +224,6 @@ public class Exploder
             }
             File file = new File(destination, entry.getName());
 
-            logger.info( "Entry is {} and file is {}", entry, file );
             if (entry.isDirectory())
             {
                 file.mkdirs();

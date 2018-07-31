@@ -3,6 +3,7 @@ package org.goots.exploder;
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.SystemOutRule;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +17,8 @@ import static org.junit.Assert.assertTrue;
 
 public class ExploderTest
 {
-    private final Logger logger = LoggerFactory.getLogger( getClass() );
+    @Rule
+    public SystemOutRule output = new SystemOutRule().muteForSuccessfulTests();
 
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
