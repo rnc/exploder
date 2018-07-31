@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * Encapsulates all possible supported archive and compression formats. Utilises commons-compress.
  */
-public class FileHandler
+class FileHandler
 {
     private static final String WAR = "war";
 
@@ -50,7 +50,7 @@ public class FileHandler
     }
 
 
-    public Set<String> getSupportedSuffixes ()
+    Set<String> getSupportedSuffixes ()
     {
         return Collections.unmodifiableSet( fileTypes.keySet() );
     }

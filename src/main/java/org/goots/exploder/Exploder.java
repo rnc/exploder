@@ -20,6 +20,7 @@ import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorInputStream;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.goots.exploder.types.FileType;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class Exploder
@@ -60,12 +62,70 @@ public class Exploder
         return this;
     }
 
-    public void unpack ( File root ) throws InternalException
+    public Set<String> getSupportedSuffixes ()
     {
-        unpack( root, null );
+        return fsh.getSupportedSuffixes();
     }
 
-    public void unpack ( File root, ExploderFileProcessor processor ) throws InternalException
+    /**
+     * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
+     * It does NOT clean up.
+     *
+     */
+    public void unpack ( File root ) throws InternalException
+    {
+        unpack( null, root );
+    }
+
+    /**
+     * This version uses the specified working directory to explode to.
+     * It will use the specified ExploderFileProcessor on each target file.
+     * It does NOT clean up.
+     *
+     * @param processor the optional FileProcessor
+     * @param working a working directory (e.g. a temporary directory to use).
+     * @param root root file (or directory contents) to explode
+     * @throws InternalException
+     */
+    public void unpack( ExploderFileProcessor processor, File working, File root ) throws InternalException
+    {
+        try
+        {
+            if ( root.isDirectory() )
+            {
+                FileUtils.copyDirectory( root, working );
+            }
+            else if ( root.isFile() )
+            {
+                if ( working.isDirectory() )
+                {
+                    FileUtils.copyFileToDirectory( root, working );
+                }
+                else
+                {
+                    FileUtils.copyFile( root, working );
+                }
+            }
+            else
+            {
+                throw new InternalException(
+                                "Target (" + root + ") is not directory or file ( exists: " + root.exists() + ')' );
+            }
+            unpack( processor, working );
+        }
+        catch ( IOException e )
+        {
+            throw new InternalException( "Error setting up working directory", e );
+        }
+    }
+
+    /**
+     * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
+     * It will use the specified ExploderFileProcessor on each target file.
+     * It does NOT clean up.
+     *
+     */
+    public void unpack( ExploderFileProcessor processor, File root ) throws InternalException
     {
         if ( root.isDirectory() )
         {
@@ -73,7 +133,7 @@ public class Exploder
             {
                 for ( Path entry : stream )
                 {
-                    unpack( entry.toFile(), processor );
+                    unpack( processor, entry.toFile() );
                 }
             }
             catch ( IOException e )
@@ -122,7 +182,7 @@ public class Exploder
             logger.info( "### Now examining decompressed file {} ", destination );
 
             // Examine unpacked file - that in itself may be an ordinary file or an archive etc.
-            unpack( destination, processor );
+            unpack( processor, destination );
         }
         catch ( CompressorException | ArchiveException | IOException e )
         {
@@ -140,7 +200,7 @@ public class Exploder
             extract( i, target );
 
             // Recurse into unpacked directory
-            unpack( target, processor );
+            unpack( processor, target );
         }
         catch ( CompressorException | ArchiveException | IOException e )
         {
