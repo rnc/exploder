@@ -138,6 +138,5 @@ class FileHandler
         {
             return fileTypes.get( FILE );
         }
-        // TODO: Other archive types : ar, 7z.
     }
 }
