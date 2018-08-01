@@ -49,6 +49,13 @@
     </developer>
   </developers>
 
+  <scm>
+    <connection>scm:git:https://github.com/rnc/exploder.git</connection>
+    <developerConnection>scm:git:git@github.com:rnc/exploder.git</developerConnection>
+    <url>http://github.com/rnc/exploder</url>
+    <tag>HEAD</tag>
+  </scm>
+
 
   <dependencyManagement>
     <dependencies>
