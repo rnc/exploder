@@ -9,7 +9,7 @@ This utility will recursively decompress and unpack a given file into its curren
 
 If a calling function implements `ExploderFileProcessor` interface then the
 ```
-    void processFile( File file, String virtualPath, String baseDir);
+    void processFile( File baseDir, File file ) throws InternalException;
 ```
 will be called on each unpacked non-archive/non-compressed file (i.e. terminal unit).
 

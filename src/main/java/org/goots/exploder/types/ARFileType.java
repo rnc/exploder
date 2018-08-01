@@ -15,24 +15,22 @@
  */
 package org.goots.exploder.types;
 
-import org.apache.commons.compress.archivers.ArchiveException;
-import org.apache.commons.compress.compressors.CompressorException;
-import org.goots.exploder.InternalException;
+import org.apache.commons.compress.archivers.ArchiveStreamFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 
-public interface FileType
+public class ARFileType
+                extends ArchiveFileType
 {
-    <T extends InputStream> T getStream( File source)
-                    throws FileNotFoundException, CompressorException, ArchiveException, InternalException;
+    @Override
+    public String getUncompressedFilename( File source )
+    {
+        return source.getName();
+    }
 
-    String getUncompressedFilename(File source);
-
-    boolean isArchive();
-
-    boolean isCompressed();
-
-    String getTypename ();
+    @Override
+    public String getTypename()
+    {
+        return ArchiveStreamFactory.AR;
+    }
 }

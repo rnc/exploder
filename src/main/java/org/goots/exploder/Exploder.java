@@ -49,6 +49,7 @@ public class Exploder
 
     private final HashSet<String> excludedSuffixes = new HashSet<>( );
 
+    private File directoryRoot;
 
     public Exploder excludeSuffix ( String suffix ) throws InternalException
     {
@@ -132,6 +133,11 @@ public class Exploder
      */
     public void unpack( ExploderFileProcessor processor, File root ) throws InternalException
     {
+        if ( directoryRoot == null )
+        {
+            logger.debug( "Setting directory root to {}", root );
+            directoryRoot = root;
+        }
         if ( root.isDirectory() )
         {
             try ( DirectoryStream<Path> stream = Files.newDirectoryStream( root.toPath() ) )
@@ -155,7 +161,7 @@ public class Exploder
             {
                 if ( type.isArchive() )
                 {
-                    logger.debug( "Unpacking {}", root );
+                    logger.debug( "Unpacking {} and type {} ", root, type.getTypename() );
 
                     unpackArchive( root, type, processor );
                 }
@@ -172,7 +178,7 @@ public class Exploder
             }
             if ( processor != null )
             {
-                processor.processFile( null, null, null );
+                processor.processFile( directoryRoot, root );
             }
         }
     }

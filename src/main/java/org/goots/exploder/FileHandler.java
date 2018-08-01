@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2018 Red Hat, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.goots.exploder;
 
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
@@ -6,11 +21,15 @@ import org.apache.commons.compress.compressors.bzip2.BZip2Utils;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.compress.compressors.lzma.LZMAUtils;
 import org.apache.commons.compress.compressors.xz.XZUtils;
+import org.goots.exploder.types.ARFileType;
 import org.goots.exploder.types.BZIP2FileType;
+import org.goots.exploder.types.CpioFileType;
+import org.goots.exploder.types.DumpFileType;
 import org.goots.exploder.types.FileType;
 import org.goots.exploder.types.GZIPFileType;
 import org.goots.exploder.types.JavaFileType;
 import org.goots.exploder.types.LZMAFileType;
+import org.goots.exploder.types.SevenZFileType;
 import org.goots.exploder.types.StandardFileType;
 import org.goots.exploder.types.TarFileType;
 import org.goots.exploder.types.XZFileType;
@@ -47,6 +66,10 @@ class FileHandler
         fileTypes.put( WAR, new JavaFileType() );
         fileTypes.put( EAR, new JavaFileType() );
         fileTypes.put( FILE, new StandardFileType() );
+        fileTypes.put( ArchiveStreamFactory.AR, new ARFileType() );
+        fileTypes.put( ArchiveStreamFactory.CPIO, new CpioFileType() );
+        fileTypes.put( ArchiveStreamFactory.SEVEN_Z, new SevenZFileType() );
+        fileTypes.put( ArchiveStreamFactory.DUMP, new DumpFileType() );
     }
 
 
@@ -94,6 +117,22 @@ class FileHandler
         else if ( source.getName().endsWith( ".ear" ) )
         {
             return fileTypes.get( EAR );
+        }
+        else if ( source.getName().endsWith( ".ar" ) )
+        {
+            return fileTypes.get( ArchiveStreamFactory.AR );
+        }
+        else if ( source.getName().endsWith( ".cpio" ) )
+        {
+            return fileTypes.get( ArchiveStreamFactory.CPIO );
+        }
+        else if ( source.getName().endsWith( ".7z" ) )
+        {
+            return fileTypes.get( ArchiveStreamFactory.SEVEN_Z );
+        }
+        else if ( source.getName().endsWith( ".dump" ) )
+        {
+            return fileTypes.get( ArchiveStreamFactory.DUMP );
         }
         else
         {
