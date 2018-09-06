@@ -51,6 +51,10 @@ public class Exploder
 
     private File directoryRoot;
 
+    private File workingDirectory;
+
+    private boolean cleanup;
+
     public Exploder excludeSuffix ( String suffix ) throws InternalException
     {
         suffix = suffix.trim().toLowerCase();
@@ -63,6 +67,52 @@ public class Exploder
         return this;
     }
 
+    /**
+     * This will configure the current instance to use a temporary directory to
+     * copy the target File to prior to unpacking. This is useful if running the
+     * {@link ExploderFileProcessor} on an archive. This WILL delete the temporary
+     * directory on completion.
+     *
+     * @return the current Exploder instance.
+     * @throws InternalException if an error occurs.
+     */
+    public Exploder useTemporaryDirectory () throws InternalException
+    {
+        Path temporaryLocation;
+        try
+        {
+            temporaryLocation = Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() );
+
+            cleanup = true;
+            useWorkingDirectory( temporaryLocation.toFile() );
+        }
+        catch ( IOException e )
+        {
+            throw new InternalException( "Error setting up working directory", e );
+        }
+
+        return this;
+    }
+
+    /**
+     * This will configure the current instance to use the specified working directory
+     * and copy the target File to it prior to unpacking. It will NOT delete the working
+     * directory on completion.
+     *
+     * @param workingDirectory the specified working directory to configure.
+     * @return the current Exploder instance.
+     */
+    public Exploder useWorkingDirectory( File workingDirectory )
+    {
+        this.workingDirectory = workingDirectory;
+
+        if ( ! workingDirectory.exists() )
+        {
+            workingDirectory.mkdirs();
+        }
+        return this;
+    }
+
     public Set<String> getSupportedSuffixes ()
     {
         return fsh.getSupportedSuffixes();
@@ -70,7 +120,9 @@ public class Exploder
 
     /**
      * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
-     * It does NOT clean up.
+     *
+     * If a working/temporary directory has been set it will copy everything to that first. If
+     * a temporary directory has been configured it will be cleaned up at the end.
      *
      * @param root root file (or directory contents) to explode
      * @throws InternalException if an error occurs.
@@ -81,51 +133,11 @@ public class Exploder
     }
 
     /**
-     * This version uses the specified working directory to explode to.
-     * It will use the specified ExploderFileProcessor on each target file.
-     * It does NOT clean up.
-     *
-     * @param processor the optional FileProcessor
-     * @param working a working directory (e.g. a temporary directory to use).
-     * @param root root file (or directory contents) to explode
-     * @throws InternalException if an error occurs.
-     */
-    public void unpack( ExploderFileProcessor processor, File working, File root ) throws InternalException
-    {
-        try
-        {
-            if ( root.isDirectory() )
-            {
-                FileUtils.copyDirectory( root, working );
-            }
-            else if ( root.isFile() )
-            {
-                if ( working.isDirectory() )
-                {
-                    FileUtils.copyFileToDirectory( root, working );
-                }
-                else
-                {
-                    FileUtils.copyFile( root, working );
-                }
-            }
-            else
-            {
-                throw new InternalException(
-                                "Target (" + root + ") is not directory or file ( exists: " + root.exists() + ')' );
-            }
-            unpack( processor, working );
-        }
-        catch ( IOException e )
-        {
-            throw new InternalException( "Error setting up working directory", e );
-        }
-    }
-
-    /**
      * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
      * It will use the specified ExploderFileProcessor on each target file.
-     * It does NOT clean up.
+     *
+     * If a working/temporary directory has been set it will copy everything to that first. If
+     * a temporary directory has been configured it will be cleaned up at the end.
      *
      * @param processor the optional FileProcessor
      * @param root root file (or directory contents) to explode
@@ -133,18 +145,79 @@ public class Exploder
      */
     public void unpack( ExploderFileProcessor processor, File root ) throws InternalException
     {
-        if ( directoryRoot == null )
+        try
         {
+            if ( workingDirectory == null )
+            {
+                workingDirectory = root;
+            }
+            else
+            {
+                if ( root.isDirectory() )
+                {
+                    FileUtils.copyDirectory( root, workingDirectory );
+                }
+                else if ( root.isFile() )
+                {
+                    if ( workingDirectory.isDirectory() )
+                    {
+                        FileUtils.copyFileToDirectory( root, workingDirectory );
+                    }
+                    else
+                    {
+                        FileUtils.copyFile( root, workingDirectory );
+                    }
+                }
+                else
+                {
+                    throw new InternalException(
+                                    "Target (" + root + ") is not directory or file ( exists: " + root.exists() + ')' );
+                }
+            }
+
             logger.debug( "Setting directory root to {}", root );
-            directoryRoot = root;
+            directoryRoot = workingDirectory;
+
+            internal_unpack( processor, workingDirectory );
+
+            if ( cleanup )
+            {
+                try
+                {
+                    logger.debug( "Cleaning up temporary directory {} ", workingDirectory );
+                    FileUtils.deleteDirectory( workingDirectory );
+                }
+                catch ( IOException e )
+                {
+                    throw new InternalException( "Error cleaning up working directory", e );
+                }
+            }
         }
+        catch ( IOException e )
+        {
+            throw new InternalException( "Error setting up workingDirectory directory", e );
+        }
+    }
+
+    /**
+     * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
+     * It will use the specified ExploderFileProcessor on each target file. This is a internal
+     * method that will recurse correctly ; the wrapper unpack methods handle cleanup and working
+     * directory configuration.
+     *
+     * @param processor the optional FileProcessor
+     * @param root root file (or directory contents) to explode
+     * @throws InternalException if an error occurs.
+     */
+    private void internal_unpack( ExploderFileProcessor processor, File root ) throws InternalException
+    {
         if ( root.isDirectory() )
         {
             try ( DirectoryStream<Path> stream = Files.newDirectoryStream( root.toPath() ) )
             {
                 for ( Path entry : stream )
                 {
-                    unpack( processor, entry.toFile() );
+                    internal_unpack( processor, entry.toFile() );
                 }
             }
             catch ( IOException e )
@@ -193,7 +266,7 @@ public class Exploder
             logger.debug( "Now examining decompressed file {} ", destination );
 
             // Examine unpacked file - that in itself may be an ordinary file or an archive etc.
-            unpack( processor, destination );
+            internal_unpack( processor, destination );
         }
         catch ( CompressorException | ArchiveException | IOException e )
         {
@@ -211,7 +284,7 @@ public class Exploder
             extract( i, target );
 
             // Recurse into unpacked directory
-            unpack( processor, target );
+            internal_unpack( processor, target );
         }
         catch ( CompressorException | ArchiveException | IOException e )
         {

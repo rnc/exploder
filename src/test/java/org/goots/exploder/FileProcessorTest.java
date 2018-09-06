@@ -38,12 +38,12 @@ public class FileProcessorTest
     @Test
     public void testUnpackWithTemporary() throws IOException, InternalException
     {
-        Exploder u = new Exploder();
-
         File target = new File (RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
 
-        u.unpack( new Processor(), temporaryFolder, target );
+        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+
+        u.unpack( new Processor(), target );
 
         File verify = new File( temporaryFolder, target.getName() + Exploder.ARCHIVE_UNPACK_SUFFIX );
         File verifyjar = new File( verify.toString() + "/example.jar" + Exploder.ARCHIVE_UNPACK_SUFFIX );
@@ -59,24 +59,22 @@ public class FileProcessorTest
     @Test(expected = InternalException.class)
     public void testUnpackWithTemporaryFails() throws IOException, InternalException
     {
-        Exploder u = new Exploder();
-
         File target = new File( RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
 
-        u.unpack( new ProcessorFails(), temporaryFolder, target );
+        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        u.unpack( new ProcessorFails(), target );
     }
 
     @Test
     public void testUnpackWithTemporaryAndVirtual() throws IOException, InternalException
     {
-        Exploder u = new Exploder();
-
         File target = new File (RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
-
         Processor p = new Processor();
-        u.unpack( p, temporaryFolder, target );
+
+        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        u.unpack( p, target );
 
         assertTrue ( p.virtualPath.equals( "example.war/example.jar/folder/Exploder.class" ));
     }

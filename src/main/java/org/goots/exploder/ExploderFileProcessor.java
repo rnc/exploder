@@ -27,7 +27,7 @@ public interface ExploderFileProcessor
      * @param baseDir the base temporary folder from which the zip/jar/ear/war/etc was unzipped
      * @param file file to process
      * @throws InternalException if the processing reports an error. This will <b>abort</b> the
-     *    unpack/decompress.
+     *    unpackEntryPoint/decompress.
      */
     void processFile( File baseDir, File file ) throws InternalException;
 

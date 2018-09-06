@@ -38,12 +38,12 @@ public class ArchivesTest
     @Test
     public void testUnpackWithTemporary() throws IOException, InternalException
     {
-        Exploder u = new Exploder();
-
         File target = new File (RESOURCES_DIR, "archive.7z" );
         File temporaryFolder = folder.newFolder();
 
-        u.unpack( null, temporaryFolder, target );
+        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+
+        u.unpack( null, target );
 
         File verify = new File( temporaryFolder, target.getName() + Exploder.ARCHIVE_UNPACK_SUFFIX );
         assertTrue( verify.exists() );
