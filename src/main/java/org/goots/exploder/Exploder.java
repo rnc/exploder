@@ -55,6 +55,13 @@ public class Exploder
 
     private boolean cleanup;
 
+    /**
+     * Register suffix to ignore when exploding the archive(s).
+     *
+     * @param suffix the suffix to ignore e.g. {@code .jar}
+     * @return the current Exploder instance.
+     * @throws InternalException if an error occurs.
+     */
     public Exploder excludeSuffix ( String suffix ) throws InternalException
     {
         suffix = suffix.trim().toLowerCase();
