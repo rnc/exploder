@@ -118,14 +118,96 @@ public class ExploderTest
 
         Exploder u = new Exploder().useTemporaryDirectory();
 
-        File temporary = (File) FieldUtils.readField( u, "workingDirectory", true);
-        Boolean cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true);
+        File temporary = (File) FieldUtils.readField( u, "workingDirectory", true );
+        Boolean cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
 
-        assertTrue ( temporary.exists() );
-        assertTrue ( cleanup );
+        assertTrue( temporary.exists() );
+        assertTrue( cleanup );
 
         u.unpack( null, target );
 
         assertFalse( temporary.exists() );
+    }
+
+    @Test
+    public void testUnpackWithURL() throws IOException, InternalException, IllegalAccessException
+    {
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+
+        Exploder u = new Exploder().useTemporaryDirectory();
+
+        File temporary = (File) FieldUtils.readField( u, "workingDirectory", true );
+        Boolean cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
+        Processor p = new Processor();
+
+        assertTrue( temporary.exists() );
+        assertTrue( cleanup );
+
+        u.unpack( p, source );
+
+        assertTrue( p.found );
+        assertFalse( temporary.exists() );
+    }
+
+    @Test
+    public void testUnpackWithURLAndTemporary() throws IOException, InternalException
+    {
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+
+        Exploder u = new Exploder();
+        Processor p = new Processor();
+
+        u.unpack( p, source );
+
+        assertTrue( p.found );
+    }
+
+    @Test
+    public void testUnpackWithFileURL() throws IOException, InternalException, IllegalAccessException
+    {
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        File target = new File( folder.newFolder(), "sourceclear.jar" );
+        FileUtils.copyURLToFile( source, target );
+
+        Exploder u = new Exploder();
+
+        Boolean cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
+        assertFalse( cleanup );
+
+        u.useWorkingDirectory(folder.newFolder());
+        File temporary = (File) FieldUtils.readField( u, "workingDirectory", true );
+        cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
+        assertFalse( cleanup );
+        assertTrue( temporary.exists() );
+
+        u.unpack( null, target.toURI().toURL() );
+
+        assertTrue( temporary.exists() );
+    }
+
+    @Test(expected = InternalException.class)
+    public void testMatchingWithLocalFileURL() throws IOException, InternalException
+    {
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        File target = new File( folder.getRoot(), "sourceclear.jar" );
+        FileUtils.copyURLToFile( source, target );
+
+        Exploder u = new Exploder().useWorkingDirectory(target.getParentFile());
+
+        u.unpack( null, target.toURI().toURL() );
+    }
+
+    private class Processor implements ExploderFileProcessor
+    {
+        public boolean found;
+
+        @Override
+        public void processFile( File baseDir, File file )
+        {
+            if ( file.getName().endsWith( "maven-wrapper-0.1.4.tar.gz" ) )
+            {
+                found = true;
+            }
+        }
     }
 }

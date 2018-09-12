@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -85,19 +86,16 @@ public class Exploder
      */
     public Exploder useTemporaryDirectory () throws InternalException
     {
-        Path temporaryLocation;
         try
         {
-            temporaryLocation = Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() );
-
+            Path temporaryLocation = Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() );
             cleanup = true;
-            useWorkingDirectory( temporaryLocation.toFile() );
+            workingDirectory = temporaryLocation.toFile();
         }
         catch ( IOException e )
         {
             throw new InternalException( "Error setting up working directory", e );
         }
-
         return this;
     }
 
@@ -137,6 +135,48 @@ public class Exploder
     public void unpack ( File root ) throws InternalException
     {
         unpack( null, root );
+    }
+
+    /**
+     * Unpacks the contents of the remote file, decompressing and unarchiving recursively.
+     * It will use the specified ExploderFileProcessor on each target file.
+     *
+     * If a temporary or working directory has not been configured then this will implicitly
+     * create and use a temporary directory which WILL be cleaned up.
+     *
+     * @param processor the optional FileProcessor
+     * @param url remote file to explode
+     * @throws InternalException if an error occurs.
+     */
+    public void unpack( ExploderFileProcessor processor, URL url ) throws InternalException
+    {
+        try
+        {
+            if ( workingDirectory == null )
+            {
+                useTemporaryDirectory();
+            }
+
+            File target = new File ( workingDirectory, url.getFile().substring( url.getFile().lastIndexOf( '/' ) ) );
+            if ( url.getProtocol().equals( "file" ) && url.getFile().equals( target.getPath() ) )
+            {
+                throw new InternalException( "Local file with working directory (" + target.getPath() + ") matches source URL:" + url.toString() );
+            }
+            FileUtils.copyURLToFile(url, target);
+
+            directoryRoot = workingDirectory;
+            logger.debug( "Downloading URL {} into working directory of {}", url, workingDirectory );
+
+            internal_unpack( processor, target );
+        }
+        catch ( IOException e )
+        {
+            throw new InternalException( "Error downloading remote URL", e );
+        }
+        finally
+        {
+            cleanup();
+        }
     }
 
     /**
@@ -186,23 +226,14 @@ public class Exploder
             directoryRoot = workingDirectory;
 
             internal_unpack( processor, workingDirectory );
-
-            if ( cleanup )
-            {
-                try
-                {
-                    logger.debug( "Cleaning up temporary directory {} ", workingDirectory );
-                    FileUtils.deleteDirectory( workingDirectory );
-                }
-                catch ( IOException e )
-                {
-                    throw new InternalException( "Error cleaning up working directory", e );
-                }
-            }
         }
         catch ( IOException e )
         {
             throw new InternalException( "Error setting up workingDirectory directory", e );
+        }
+        finally
+        {
+            cleanup();
         }
     }
 
@@ -322,6 +353,22 @@ public class Exploder
                 {
                     IOUtils.copy( input, output );
                 }
+            }
+        }
+    }
+
+    private void cleanup() throws InternalException
+    {
+        if ( cleanup )
+        {
+            try
+            {
+                logger.debug( "Cleaning up temporary directory {} ", workingDirectory );
+                FileUtils.deleteDirectory( workingDirectory );
+            }
+            catch ( IOException e )
+            {
+                throw new InternalException( "Error cleaning up working directory", e );
             }
         }
     }

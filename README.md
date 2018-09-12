@@ -25,7 +25,7 @@ Register suffix to ignore when exploding the archive(s).
 
 ##### `public Exploder useTemporaryDirectory () throws InternalException`
 
-This will configure the current instance to use a temporary directory to copy the target File to prior to unpacking. This is useful if running the `ExploderFileProcessor` on an archive. This WILL delete the temporary directory on completion.
+This will configure the current instance to use a temporary directory to copy the target File to prior to unpacking. This is useful if running the `ExploderFileProcessor` on an archive. It WILL delete the temporary directory on completion.
 
 ##### `public Exploder useWorkingDirectory( File workingDirectory )`
 
@@ -42,6 +42,12 @@ If a working/temporary directory has been set it will copy everything to that fi
 Unpacks the contents of the file/directory, decompressing and unarchiving recursively. It will use the specified ExploderFileProcessor on each target file.
 
 If a working/temporary directory has been set it will copy everything to that first. If a temporary directory has been configured it will be cleaned up at the end.
+
+##### `public void unpack( ExploderFileProcessor processor, URL source ) throws InternalException`
+
+Unpacks the contents of the remote file, decompressing and unarchiving recursively. It will use the specified ExploderFileProcessor on each target file.
+
+If a working/temporary directory has not been configured then this will implicitly create and use a temporary directory which WILL be cleaned up at the end.
 
 
 
