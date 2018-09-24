@@ -41,7 +41,15 @@ public interface ExploderFileProcessor
      */
     default String getVirtualPath (File baseDir, File target)
     {
-        return StringUtils.remove( StringUtils.removeStart( target.getPath(), baseDir.getPath() + File.separator),
-                                   Exploder.ARCHIVE_UNPACK_SUFFIX );
+        String file = StringUtils.removeStart( target.getPath(), baseDir.getPath() + File.separator);
+
+        if ( file.contains( Exploder.ARCHIVE_UNPACK_SUFFIX + "/" ) )
+        {
+            return file.split( ".*" + Exploder.ARCHIVE_UNPACK_SUFFIX + "/" )[1];
+        }
+        else
+        {
+            return file;
+        }
     }
 }

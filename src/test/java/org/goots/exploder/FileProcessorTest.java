@@ -23,6 +23,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class FileProcessorTest
@@ -43,7 +44,7 @@ public class FileProcessorTest
 
         Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
 
-        u.unpack( new Processor(), target );
+        u.unpack( new Processor(""), target );
 
         File verify = new File( temporaryFolder, target.getName() + Exploder.ARCHIVE_UNPACK_SUFFIX );
         File verifyjar = new File( verify.toString() + "/example.jar" + Exploder.ARCHIVE_UNPACK_SUFFIX );
@@ -67,34 +68,50 @@ public class FileProcessorTest
     }
 
     @Test
-    public void testUnpackWithTemporaryAndVirtual() throws IOException, InternalException
+    public void testUnpackWithTemporaryAndVirtual1() throws IOException, InternalException
     {
         File target = new File (RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
-        Processor p = new Processor();
+        Processor p = new Processor("Exploder.class");
 
         Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
         u.unpack( p, target );
 
-        assertTrue ( p.virtualPath.equals( "example.war/example.jar/folder/Exploder.class" ));
+        assertEquals( "folder/Exploder.class", p.virtualPath );
     }
 
+    @Test
+    public void testUnpackWithTemporaryAndVirtual2() throws IOException, InternalException
+    {
+        File target = new File (RESOURCES_DIR, "example.war" );
+        File temporaryFolder = folder.newFolder();
+        Processor p = new Processor("example.jar");
+
+        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        u.unpack( p, target );
+
+        assertEquals( "example.jar", p.virtualPath );
+    }
 
 
     private class Processor implements ExploderFileProcessor
     {
-        public String virtualPath;
+        private String search;
+
+        String virtualPath;
+
+        Processor( String s )
+        {
+            search = s;
+        }
 
         @Override
         public void processFile( File baseDir, File file ) throws InternalException
         {
-            System.out.println ("### Processing file " + file + " with baseDir " + baseDir + " and virtual path is " + getVirtualPath( baseDir, file ));
-            if ( file.getName().endsWith( ".class" ) )
+            System.out.println( "### Processing file " + file + " with baseDir " + baseDir + " and virtual path is " + getVirtualPath( baseDir, file ) );
+            if ( file.getName().endsWith( search ) )
             {
-                if ( "Exploder.class".equals( file.getName() ) )
-                {
-                    virtualPath = getVirtualPath( baseDir, file );
-                }
+                virtualPath = getVirtualPath( baseDir, file );
             }
         }
     }
