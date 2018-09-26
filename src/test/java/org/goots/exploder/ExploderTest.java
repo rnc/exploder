@@ -72,25 +72,28 @@ public class ExploderTest
                                               + Exploder.ARCHIVE_UNPACK_SUFFIX ).exists() );
     }
 
+    @Test(expected = InternalException.class)
+    public void testUnpackWithWorkingAndTemp() throws IOException, InternalException
+    {
+        new Exploder().useTargetDirectory( folder.newFolder() ).useTemporaryDirectory();
+    }
+
     @Test
     public void testUnpackWithWorking() throws IOException, InternalException
     {
         File target = new File( folder.getRoot(), "sourceclear.jar" );
-        URL source =
-                        new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
         FileUtils.copyURLToFile( source, target );
         File temporaryFolder = folder.newFolder();
 
-        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder );
 
         u.unpack( null, target );
 
-        File verify = new File( temporaryFolder, target.getName() + Exploder.ARCHIVE_UNPACK_SUFFIX );
-        assertTrue( verify.exists() );
-
-        assertTrue( new File( verify.toString() + "/io/takari/maven-wrapper-0.1.4.tar.gz" ).exists() );
-        assertTrue( new File( verify.toString() + "/io/takari/maven-wrapper-0.1.4.tar" ).exists() );
-        assertTrue( new File( verify.toString() + "/io/takari/maven-wrapper-0.1.4.tar"
+        assertTrue( temporaryFolder.exists() );
+        assertTrue( new File( temporaryFolder.toString() + "/io/takari/maven-wrapper-0.1.4.tar.gz" ).exists() );
+        assertTrue( new File( temporaryFolder.toString() + "/io/takari/maven-wrapper-0.1.4.tar" ).exists() );
+        assertTrue( new File( temporaryFolder.toString() + "/io/takari/maven-wrapper-0.1.4.tar"
                                               + Exploder.ARCHIVE_UNPACK_SUFFIX ).exists() );
     }
 
@@ -118,7 +121,7 @@ public class ExploderTest
 
         Exploder u = new Exploder().useTemporaryDirectory();
 
-        File temporary = (File) FieldUtils.readField( u, "workingDirectory", true );
+        File temporary = (File) FieldUtils.readField( u, "targetDirectory", true );
         Boolean cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
 
         assertTrue( temporary.exists() );
@@ -136,7 +139,7 @@ public class ExploderTest
 
         Exploder u = new Exploder().useTemporaryDirectory();
 
-        File temporary = (File) FieldUtils.readField( u, "workingDirectory", true );
+        File temporary = (File) FieldUtils.readField( u, "targetDirectory", true );
         Boolean cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
         Processor p = new Processor();
 
@@ -174,8 +177,8 @@ public class ExploderTest
         Boolean cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
         assertFalse( cleanup );
 
-        u.useWorkingDirectory(folder.newFolder());
-        File temporary = (File) FieldUtils.readField( u, "workingDirectory", true );
+        u.useTargetDirectory( folder.newFolder());
+        File temporary = (File) FieldUtils.readField( u, "targetDirectory", true );
         cleanup = (Boolean) FieldUtils.readField( u, "cleanup", true );
         assertFalse( cleanup );
         assertTrue( temporary.exists() );
@@ -185,21 +188,9 @@ public class ExploderTest
         assertTrue( temporary.exists() );
     }
 
-    @Test(expected = InternalException.class)
-    public void testMatchingWithLocalFileURL() throws IOException, InternalException
-    {
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
-        File target = new File( folder.getRoot(), "sourceclear.jar" );
-        FileUtils.copyURLToFile( source, target );
-
-        Exploder u = new Exploder().useWorkingDirectory(target.getParentFile());
-
-        u.unpack( null, target.toURI().toURL() );
-    }
-
     private class Processor implements ExploderFileProcessor
     {
-        public boolean found;
+        boolean found;
 
         @Override
         public void processFile( File baseDir, File file )
@@ -209,5 +200,37 @@ public class ExploderTest
                 found = true;
             }
         }
+    }
+
+    @Test
+    public void testUnpackWithURLAndWorking() throws IOException, InternalException
+    {
+        File targetDir = folder.newFolder();
+        Exploder u = new Exploder().useTargetDirectory( targetDir );
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+
+        u.unpack( null, source );
+
+        assertTrue( targetDir.exists() );
+
+        assertTrue( new File( targetDir, "/io/takari/maven-wrapper-0.1.4.tar.gz" ).exists() );
+        assertTrue( new File( targetDir, "/io/takari/maven-wrapper-0.1.4.tar" ).exists() );
+        assertTrue( new File( targetDir, "/io/takari/maven-wrapper-0.1.4.tar"
+                                              + Exploder.ARCHIVE_UNPACK_SUFFIX ).exists() );
+    }
+
+    @Test
+    public void testUnpackWithURLAndWorkingNoRecurse() throws IOException, InternalException
+    {
+        File targetDir = folder.newFolder();
+        Exploder u = new Exploder().useTargetDirectory( targetDir ).disableRecursion();
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+
+        u.unpack( null, source );
+
+        assertTrue( targetDir.exists() );
+        assertTrue( new File( targetDir, "/io/takari/maven-wrapper-0.1.4.tar.gz" ).exists() );
+        assertFalse( new File( targetDir, "/io/takari/maven-wrapper-0.1.4.tar" ).exists() );
+        assertFalse( new File( targetDir, "/io/takari/maven-wrapper-0.1.4.tar" + Exploder.ARCHIVE_UNPACK_SUFFIX ).exists() );
     }
 }

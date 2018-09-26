@@ -15,6 +15,7 @@
  */
 package org.goots.exploder;
 
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.SystemOutRule;
@@ -36,19 +37,65 @@ public class ArchivesTest
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
-    public void testUnpackWithTemporary() throws IOException, InternalException
+    public void testUnpackWithTemporary() throws InternalException, IllegalAccessException
     {
         File target = new File (RESOURCES_DIR, "archive.7z" );
+
+        Exploder u = new Exploder().useTemporaryDirectory();
+        File temporaryFolder = (File) FieldUtils.readField( u, "targetDirectory", true );
+        FieldUtils.writeField( u, "cleanup", false, true );
+        u.unpack( null, target );
+
+        assertTrue( temporaryFolder.exists() );
+        assertTrue ( new File ( temporaryFolder.toString() + "/folder" ).exists() );
+        assertTrue ( new File ( temporaryFolder.toString() + "/folder/sample.txt" ).exists() );
+    }
+
+    @Test
+    public void testUnpackWithTemporaryAndString() throws InternalException, IllegalAccessException
+    {
+        String target = new String (RESOURCES_DIR + "/archive.7z" );
+
+        Exploder u = new Exploder().useTemporaryDirectory();
+        File temporaryFolder = (File) FieldUtils.readField( u, "targetDirectory", true );
+        FieldUtils.writeField( u, "cleanup", false, true );
+        u.unpack( target );
+
+        assertTrue( temporaryFolder.exists() );
+        assertTrue ( new File ( temporaryFolder.toString() + "/folder" ).exists() );
+        assertTrue ( new File ( temporaryFolder.toString() + "/folder/sample.txt" ).exists() );
+    }
+    @Test
+    public void testUnpackWithWorkingZip() throws IOException, InternalException
+    {
+        File target = new File (RESOURCES_DIR, "example.zip" );
         File temporaryFolder = folder.newFolder();
 
-        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder );
 
         u.unpack( null, target );
 
-        File verify = new File( temporaryFolder, target.getName() + Exploder.ARCHIVE_UNPACK_SUFFIX );
-        assertTrue( verify.exists() );
+        assertTrue( temporaryFolder.exists() );
+        assertTrue ( new File ( temporaryFolder.toString() + "/dummy-repo" ).exists() );
+        assertTrue ( new File ( temporaryFolder.toString() + "/dummy-repo/maven-repository/global.pom" ).exists() );
+    }
 
-        assertTrue ( new File ( verify.toString() + "/folder" ).exists() );
-        assertTrue ( new File ( verify.toString() + "/folder/sample.txt" ).exists() );
+    @Test
+    public void testUnpackWithWorkingTarGZ() throws IOException, InternalException
+    {
+        File target = new File (RESOURCES_DIR, "example.tar.gz" );
+        File temporaryFolder = folder.newFolder();
+
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder );
+
+        u.unpack( null, target );
+
+        assertTrue( temporaryFolder.exists() );
+
+        assertTrue( new File ( temporaryFolder, "example.tar").exists() );
+        File f = new File ( temporaryFolder, "example.tar" + Exploder.ARCHIVE_UNPACK_SUFFIX);
+
+        assertTrue( new File ( temporaryFolder, "example.tar" + Exploder.ARCHIVE_UNPACK_SUFFIX).exists() );
+        assertTrue ( new File ( temporaryFolder, "example.tar" + Exploder.ARCHIVE_UNPACK_SUFFIX + "/dummy-repo" ).exists() );
     }
 }
