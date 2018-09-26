@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -52,9 +54,11 @@ public class Exploder
 
     private File directoryRoot;
 
-    private File workingDirectory;
+    private File targetDirectory;
 
     private boolean cleanup;
+
+    private boolean recurse = true;
 
     /**
      * Register suffix to ignore when exploding the archive(s).
@@ -76,6 +80,19 @@ public class Exploder
     }
 
     /**
+     * This will disable recursive unpack. By default Exploder will recursively unpack all supported
+     * types.
+     *
+     * @return the current Exploder instance.
+     */
+    public Exploder disableRecursion()
+    {
+        recurse = false;
+
+        return this;
+    }
+
+    /**
      * This will configure the current instance to use a temporary directory to
      * copy the target File to prior to unpacking. This is useful if running the
      * {@link ExploderFileProcessor} on an archive. This WILL delete the temporary
@@ -86,11 +103,15 @@ public class Exploder
      */
     public Exploder useTemporaryDirectory () throws InternalException
     {
+        if ( this.targetDirectory != null )
+        {
+            throw new InternalException( "Working directory already configured" );
+        }
         try
         {
             Path temporaryLocation = Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() );
             cleanup = true;
-            workingDirectory = temporaryLocation.toFile();
+            targetDirectory = temporaryLocation.toFile();
         }
         catch ( IOException e )
         {
@@ -100,20 +121,25 @@ public class Exploder
     }
 
     /**
-     * This will configure the current instance to use the specified working directory
+     * This will configure the current instance to use the specified target directory
      * and copy the target File to it prior to unpacking. It will NOT delete the working
      * directory on completion.
      *
-     * @param workingDirectory the specified working directory to configure.
+     * @param targetDirectory the specified working directory to configure.
      * @return the current Exploder instance.
+     * @throws InternalException if an error occurs.
      */
-    public Exploder useWorkingDirectory( File workingDirectory )
+    public Exploder useTargetDirectory( File targetDirectory ) throws InternalException
     {
-        this.workingDirectory = workingDirectory;
-
-        if ( ! workingDirectory.exists() )
+        if ( this.targetDirectory != null )
         {
-            workingDirectory.mkdirs();
+            throw new InternalException( "Target directory already configured" );
+        }
+        this.targetDirectory = targetDirectory;
+
+        if ( ! targetDirectory.exists() )
+        {
+            targetDirectory.mkdirs();
         }
         return this;
     }
@@ -124,17 +150,30 @@ public class Exploder
     }
 
     /**
-     * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
+     * Unpacks the contents of the url/file/directory, decompressing and unarchiving recursively.
      *
-     * If a working/temporary directory has been set it will copy everything to that first. If
-     * a temporary directory has been configured it will be cleaned up at the end.
+     * This is a simple wrapper around the File/URL methods.
      *
-     * @param root root file (or directory contents) to explode
+     * @param path root url, file (or directory contents) to explode
      * @throws InternalException if an error occurs.
      */
-    public void unpack ( File root ) throws InternalException
+    public void unpack ( String path ) throws InternalException
     {
-        unpack( null, root );
+        if ( path.startsWith("http:") || path.startsWith("https:") || path.startsWith("file:") )
+        {
+            try
+            {
+                unpack(null, new URL ( path ) );
+            }
+            catch ( MalformedURLException e )
+            {
+                throw new InternalException( "Unable to translate path (" + path + ") into URL." );
+            }
+        }
+        else
+        {
+            unpack( new File ( path ) );
+        }
     }
 
     /**
@@ -152,22 +191,21 @@ public class Exploder
     {
         try
         {
-            if ( workingDirectory == null )
+            if ( targetDirectory == null )
             {
                 useTemporaryDirectory();
             }
 
-            File target = new File ( workingDirectory, url.getFile().substring( url.getFile().lastIndexOf( '/' ) ) );
-            if ( url.getProtocol().equals( "file" ) && url.getFile().equals( target.getPath() ) )
-            {
-                throw new InternalException( "Local file with working directory (" + target.getPath() + ") matches source URL:" + url.toString() );
-            }
+            File target = new File ( Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() ).toFile(),
+                                     url.getFile().substring( url.getFile().lastIndexOf( '/' ) ) );
+
+            // TODO : Implement concurrent axel/aria2c downloader
+            logger.debug( "Downloading URL {} to {} unpacking to {}", url, target, targetDirectory );
             FileUtils.copyURLToFile(url, target);
 
-            directoryRoot = workingDirectory;
-            logger.debug( "Downloading URL {} into working directory of {}", url, workingDirectory );
+            directoryRoot = targetDirectory;
 
-            internal_unpack( processor, target );
+            internal_unpack( processor, target, targetDirectory );
         }
         catch ( IOException e )
         {
@@ -181,9 +219,23 @@ public class Exploder
 
     /**
      * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
+     *
+     * If a root is a directory then it will copy the it to the target directory first. If
+     * a temporary directory has been configured it will be cleaned up at the end.
+     *
+     * @param root root file (or directory contents) to explode
+     * @throws InternalException if an error occurs.
+     */
+    public void unpack ( File root ) throws InternalException
+    {
+        unpack( null, root );
+    }
+
+    /**
+     * Unpacks the contents of the file/directory, decompressing and unarchiving recursively.
      * It will use the specified ExploderFileProcessor on each target file.
      *
-     * If a working/temporary directory has been set it will copy everything to that first. If
+     * If a root is a directory then it will copy the it to the target directory first. If
      * a temporary directory has been configured it will be cleaned up at the end.
      *
      * @param processor the optional FileProcessor
@@ -194,42 +246,32 @@ public class Exploder
     {
         try
         {
-            if ( workingDirectory == null )
+            if ( targetDirectory == null )
             {
-                workingDirectory = root;
+                targetDirectory = root.isDirectory() ? root : root.getParentFile();
             }
             else
             {
                 if ( root.isDirectory() )
                 {
-                    FileUtils.copyDirectory( root, workingDirectory );
+                    FileUtils.copyDirectory( root, targetDirectory );
+                    root = targetDirectory;
                 }
-                else if ( root.isFile() )
-                {
-                    if ( workingDirectory.isDirectory() )
-                    {
-                        FileUtils.copyFileToDirectory( root, workingDirectory );
-                    }
-                    else
-                    {
-                        FileUtils.copyFile( root, workingDirectory );
-                    }
-                }
-                else
+                else if ( ! root.isFile() )
                 {
                     throw new InternalException(
                                     "Target (" + root + ") is not directory or file ( exists: " + root.exists() + ')' );
                 }
             }
 
-            logger.debug( "Setting directory root to {}", root );
-            directoryRoot = workingDirectory;
+            logger.debug( "Setting directory root to {} with target directory {}", root, targetDirectory.getAbsolutePath() );
+            directoryRoot = targetDirectory;
 
-            internal_unpack( processor, workingDirectory );
+            internal_unpack( processor, root, targetDirectory );
         }
         catch ( IOException e )
         {
-            throw new InternalException( "Error setting up workingDirectory directory", e );
+            throw new InternalException( "Error setting up targetDirectory directory", e );
         }
         finally
         {
@@ -245,9 +287,10 @@ public class Exploder
      *
      * @param processor the optional FileProcessor
      * @param root root file (or directory contents) to explode
+     * @param targetDirectory target directory to unpack to. Only used for first level unpack.
      * @throws InternalException if an error occurs.
      */
-    private void internal_unpack( ExploderFileProcessor processor, File root ) throws InternalException
+    private void internal_unpack( ExploderFileProcessor processor, File root, File targetDirectory ) throws InternalException
     {
         if ( root.isDirectory() )
         {
@@ -255,7 +298,7 @@ public class Exploder
             {
                 for ( Path entry : stream )
                 {
-                    internal_unpack( processor, entry.toFile() );
+                    internal_unpack( processor, entry.toFile(), null );
                 }
             }
             catch ( IOException e )
@@ -272,15 +315,15 @@ public class Exploder
             {
                 if ( type.isArchive() )
                 {
-                    logger.debug( "Unpacking {} and type {} ", root, type.getTypename() );
+                    logger.debug( "Unpacking {} and type {}", root, type.getTypename());
 
-                    unpackArchive( root, type, processor );
+                    unpackArchive( root, type, processor, targetDirectory );
                 }
                 else if ( type.isCompressed() )
                 {
                     logger.debug( "Decompressing {}", root );
 
-                    decompressFile ( root, type, processor );
+                    decompressFile ( root, type, processor, targetDirectory );
                 }
                 else
                 {
@@ -294,17 +337,29 @@ public class Exploder
         }
     }
 
-    private void decompressFile( File root, FileType type, ExploderFileProcessor processor ) throws InternalException
+    private void decompressFile( File root, FileType type, ExploderFileProcessor processor, File targetDirectory ) throws InternalException
     {
         try (CompressorInputStream c = type.getStream( root ))
         {
-            File destination = new File( type.getUncompressedFilename( root ) );
+            File destination;
+            if ( targetDirectory != null )
+            {
+                destination = new File( targetDirectory, type.getUncompressedFilename( new File ( root.getName() ) ) );
+            }
+            else
+            {
+                destination = new File( type.getUncompressedFilename( root ) );
+            }
+
             IOUtils.copy( c, Files.newOutputStream( destination.toPath() ) );
 
             logger.debug( "Now examining decompressed file {} ", destination );
 
-            // Examine unpacked file - that in itself may be an ordinary file or an archive etc.
-            internal_unpack( processor, destination );
+            if ( recurse )
+            {
+                // Examine decompressed file - that in itself may be an ordinary file or an archive etc.
+                internal_unpack( processor, destination, null );
+            }
         }
         catch ( CompressorException | ArchiveException | IOException e )
         {
@@ -312,17 +367,27 @@ public class Exploder
         }
     }
 
-    private void unpackArchive( File root, FileType type, ExploderFileProcessor processor ) throws InternalException
+    private void unpackArchive( File root, FileType type, ExploderFileProcessor processor, File targetDirectory ) throws InternalException
     {
         try ( ArchiveInputStream i = type.getStream( root ) )
         {
-            File target = new File( root.getParentFile(), root.getName() + ARCHIVE_UNPACK_SUFFIX );
-            target.mkdirs();
-
+            File target;
+            if ( targetDirectory == null )
+            {
+                target = new File( root.getParentFile(), root.getName() + ARCHIVE_UNPACK_SUFFIX );
+                target.mkdirs();
+            }
+            else
+            {
+                target = targetDirectory;
+            }
             extract( i, target );
 
-            // Recurse into unpacked directory
-            internal_unpack( processor, target );
+            if ( recurse )
+            {
+                // Recurse into unpacked directory
+                internal_unpack( processor, target, null );
+            }
         }
         catch ( CompressorException | ArchiveException | IOException e )
         {
@@ -363,8 +428,8 @@ public class Exploder
         {
             try
             {
-                logger.debug( "Cleaning up temporary directory {} ", workingDirectory );
-                FileUtils.deleteDirectory( workingDirectory );
+                logger.debug( "Cleaning up temporary directory {} ", targetDirectory );
+                FileUtils.deleteDirectory( targetDirectory );
             }
             catch ( IOException e )
             {

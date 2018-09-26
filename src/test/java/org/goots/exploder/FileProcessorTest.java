@@ -22,6 +22,7 @@ import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,18 +38,17 @@ public class FileProcessorTest
     public TemporaryFolder folder = new TemporaryFolder();
 
     @Test
-    public void testUnpackWithTemporary() throws IOException, InternalException
+    public void testUnpackWithTarget() throws IOException, InternalException
     {
         File target = new File (RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
 
-        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder );
 
-        u.unpack( new Processor(""), target );
+        u.unpack( target );
 
-        File verify = new File( temporaryFolder, target.getName() + Exploder.ARCHIVE_UNPACK_SUFFIX );
-        File verifyjar = new File( verify.toString() + "/example.jar" + Exploder.ARCHIVE_UNPACK_SUFFIX );
-        assertTrue( verify.exists() );
+        File verifyjar = new File( temporaryFolder.toString() + "/example.jar" + Exploder.ARCHIVE_UNPACK_SUFFIX );
+        assertTrue( temporaryFolder.exists() );
 
         assertTrue ( verifyjar.exists() );
         assertTrue ( new File ( verifyjar.toString() + "/folder" ).exists() );
@@ -58,39 +58,61 @@ public class FileProcessorTest
     }
 
     @Test(expected = InternalException.class)
-    public void testUnpackWithTemporaryFails() throws IOException, InternalException
+    public void testUnpackWithTargetFails() throws IOException, InternalException
     {
         File target = new File( RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
 
-        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder );
         u.unpack( new ProcessorFails(), target );
     }
 
     @Test
-    public void testUnpackWithTemporaryAndVirtual1() throws IOException, InternalException
+    public void testUnpackWithTargetAndVirtual1() throws IOException, InternalException
     {
         File target = new File (RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
         Processor p = new Processor("Exploder.class");
 
-        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder );
         u.unpack( p, target );
 
         assertEquals( "folder/Exploder.class", p.virtualPath );
     }
 
     @Test
-    public void testUnpackWithTemporaryAndVirtual2() throws IOException, InternalException
+    public void testUnpackWithTargetAndVirtual2() throws IOException, InternalException
     {
         File target = new File (RESOURCES_DIR, "example.war" );
         File temporaryFolder = folder.newFolder();
-        Processor p = new Processor("example.jar");
+        Processor pr = new Processor("example.jar");
 
-        Exploder u = new Exploder().useWorkingDirectory( temporaryFolder );
-        u.unpack( p, target );
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder );
+        u.unpack( pr, target );
 
-        assertEquals( "example.jar", p.virtualPath );
+        assertEquals( "example.jar", pr.virtualPath );
+
+        assertTrue ( Files.walk ( temporaryFolder.toPath() )
+                          // Ignore the root directory when counting.
+                          .filter( p -> ! p.toFile().equals( temporaryFolder ) )
+                          .peek( p -> System.out.println ("Found " + p ) ).count() == 9 );
+
+    }
+
+    @Test
+    public void testUnpackWithTargetNoRecurse() throws IOException, InternalException
+    {
+        File target = new File (RESOURCES_DIR, "example.war" );
+        File temporaryFolder = folder.newFolder();
+
+        Exploder u = new Exploder().useTargetDirectory( temporaryFolder ).disableRecursion();
+
+        u.unpack( target );
+
+        assertTrue ( Files.walk ( temporaryFolder.toPath() )
+                          // Ignore the root directory when counting.
+                          .filter( p -> ! p.toFile().equals( temporaryFolder ) )
+                          .peek( p -> System.out.println ("Found " + p ) ).count() == 3 );
     }
 
 
@@ -115,7 +137,6 @@ public class FileProcessorTest
             }
         }
     }
-
 
     private class ProcessorFails implements ExploderFileProcessor
     {
