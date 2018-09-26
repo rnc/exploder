@@ -30,7 +30,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -45,6 +44,8 @@ public class Exploder
      * Use a unique suffix for unpacking archives.
      */
     public final static String ARCHIVE_UNPACK_SUFFIX = "-unpacked-" + UUID.randomUUID().toString();
+
+    public static final String ARCHIVE_EXTRACT_SUFFIX =  "exploder-" + UUID.randomUUID().toString();
 
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
@@ -109,7 +110,7 @@ public class Exploder
         }
         try
         {
-            Path temporaryLocation = Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() );
+            Path temporaryLocation = Files.createTempDirectory(ARCHIVE_EXTRACT_SUFFIX);
             cleanup = true;
             targetDirectory = temporaryLocation.toFile();
         }
@@ -196,7 +197,7 @@ public class Exploder
                 useTemporaryDirectory();
             }
 
-            File target = new File ( Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() ).toFile(),
+            File target = new File ( targetDirectory,
                                      url.getFile().substring( url.getFile().lastIndexOf( '/' ) ) );
 
             // TODO : Implement concurrent axel/aria2c downloader
