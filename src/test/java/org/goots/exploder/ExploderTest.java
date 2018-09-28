@@ -57,8 +57,7 @@ public class ExploderTest
         Exploder u = new Exploder();
 
         File target = new File( folder.getRoot(), "sourceclear.jar" );
-        URL source =
-                        new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
         FileUtils.copyURLToFile( source, target );
 
         u.unpack( target );

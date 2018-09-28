@@ -74,22 +74,22 @@ If a working/temporary directory has not been configured then this will implicit
 * Any operation should be able to run a FileProcessor on it.
 * Any unpack operation should be able to ignore pre-configured set of suffixes.
 * Any unpack operation should be configurable to recurse or not.
-* Any unpack operation can utilise a temporary directory instead of target directory for unpacking
- * FileProcessor can run over this.
- * Automatically cleaned up at the end.
+* Any unpack operation can utilise a temporary directory instead of target directory for unpacking. It should be automatically cleaned up at the end.
 
 
-Take a directory structure and copy it and unpack it to a destination directory.
+Take a directory structure, copy it and unpack it to a destination directory.
  * Optionally recursively unpack all nested structures ( e.g. jar within a war )
- * Is NOT cleaned up at the end
- * If no target has been supplied use a temporary
+ * Is NOT cleaned up at the end (unless a temporary is configured).
+ * If a target has been configured copy to target directory else unpack in place.
+
 Take a file and unpack it to a destination directory.
  * Optionally recursively unpack all nested structures ( e.g. jar within a war )
- * Is NOT cleaned up at the end
- * If no target has been supplied use a temporary
+ * Is NOT cleaned up at the end (unless a temporary is configured).
+ * If a target has been configured copy to target directory else unpack in place.
+
 Take a URL and unpack to a destination directory.
  * Optionally recursively unpack all nested structures ( e.g. jar within a war )
- * Is NOT cleaned up at the end
+ * Is NOT cleaned up at the end (unless a temporary is configured).
  * URL should be downloaded to a temporary directory prior to commencing unpack.
  * If no target has been supplied use a temporary
 
