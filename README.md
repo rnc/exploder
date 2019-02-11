@@ -92,7 +92,3 @@ Take a URL and unpack to a destination directory.
  * Is NOT cleaned up at the end (unless a temporary is configured).
  * URL should be downloaded to a temporary directory prior to commencing unpack.
  * If no target has been supplied use a temporary
-
-### TODO:
-
-1. Multi-threading fork/join execution when decomposing the unpack/decompress.
