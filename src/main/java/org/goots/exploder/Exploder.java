@@ -23,6 +23,7 @@ import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.goots.exploder.types.FileType;
+import org.goots.jdownloader.JDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -198,15 +200,22 @@ public class Exploder
             File target = new File ( Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() ).toFile(),
                                      url.getFile().substring( url.getFile().lastIndexOf( '/' ) ) );
 
-            // TODO : Implement concurrent axel/aria2c downloader
             logger.debug( "Downloading URL {} to {} unpacking to {}", url, target, targetDirectory );
-            FileUtils.copyURLToFile(url, target);
+            // JDownloader does not support file: protocols so just copy the file in those circumstances.
+            if ( url.getProtocol().equals( "file" ) )
+            {
+                Files.copy( new File( url.getPath() ).toPath(), target.toPath() );
+            }
+            else
+            {
+                new JDownloader( url ).target( target.getAbsolutePath() ).execute();
+            }
 
             directoryRoot = targetDirectory;
 
             internal_unpack( processor, target, targetDirectory );
         }
-        catch ( IOException e )
+        catch ( IOException | org.goots.jdownloader.utils.InternalException | URISyntaxException e )
         {
             throw new InternalException( "Error downloading remote URL", e );
         }
