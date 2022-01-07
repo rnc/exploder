@@ -208,7 +208,7 @@ public class Exploder
             }
             else
             {
-                new JDownloader( url ).target( target.getAbsolutePath() ).execute();
+                new JDownloader( url ).partCount( 10 ).target( target.getAbsolutePath() ).execute();
             }
 
             directoryRoot = targetDirectory;
