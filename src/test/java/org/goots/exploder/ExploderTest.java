@@ -57,7 +57,7 @@ public class ExploderTest
         Exploder u = new Exploder();
 
         File target = new File( folder.getRoot(), "sourceclear.jar" );
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
         FileUtils.copyURLToFile( source, target );
 
         u.unpack( target );
@@ -81,7 +81,7 @@ public class ExploderTest
     public void testUnpackWithWorking() throws IOException, InternalException
     {
         File target = new File( folder.getRoot(), "sourceclear.jar" );
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
         FileUtils.copyURLToFile( source, target );
         File temporaryFolder = folder.newFolder();
 
@@ -102,7 +102,7 @@ public class ExploderTest
         Exploder u = new Exploder().excludeSuffix( "jaR" );
 
         File target = new File( folder.getRoot(), "sourceclear.jar" );
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
         FileUtils.copyURLToFile( source, target );
 
         u.unpack( target );
@@ -115,7 +115,7 @@ public class ExploderTest
     public void testUnpackWithTemporary() throws IOException, InternalException, IllegalAccessException
     {
         File target = new File( folder.getRoot(), "sourceclear.jar" );
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
         FileUtils.copyURLToFile( source, target );
 
         Exploder u = new Exploder().useTemporaryDirectory();
@@ -134,7 +134,7 @@ public class ExploderTest
     @Test
     public void testUnpackWithURL() throws IOException, InternalException, IllegalAccessException
     {
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
 
         Exploder u = new Exploder().useTemporaryDirectory();
 
@@ -154,7 +154,7 @@ public class ExploderTest
     @Test
     public void testUnpackWithURLAndTemporary() throws IOException, InternalException
     {
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
 
         Exploder u = new Exploder();
         Processor p = new Processor();
@@ -167,7 +167,7 @@ public class ExploderTest
     @Test
     public void testUnpackWithFileURL() throws IOException, InternalException, IllegalAccessException
     {
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
         File target = new File( folder.newFolder(), "sourceclear.jar" );
         FileUtils.copyURLToFile( source, target );
 
@@ -206,7 +206,7 @@ public class ExploderTest
     {
         File targetDir = folder.newFolder();
         Exploder u = new Exploder().useTargetDirectory( targetDir );
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
 
         u.unpack( null, source );
 
@@ -223,7 +223,7 @@ public class ExploderTest
     {
         File targetDir = folder.newFolder();
         Exploder u = new Exploder().useTargetDirectory( targetDir ).disableRecursion();
-        URL source = new URL( "http://central.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
+        URL source = new URL( "https://repo1.maven.org/maven2/com/srcclr/srcclr-maven-plugin/3.0.0/srcclr-maven-plugin-3.0.0.jar" );
 
         u.unpack( null, source );
 
