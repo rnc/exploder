@@ -45,7 +45,7 @@ public class Exploder
     /**
      * Use a unique suffix for unpacking archives.
      */
-    public final static String ARCHIVE_UNPACK_SUFFIX = "-unpacked-" + UUID.randomUUID().toString();
+    public final static String ARCHIVE_UNPACK_SUFFIX = "-unpacked-" + UUID.randomUUID();
 
     private final Logger logger = LoggerFactory.getLogger( getClass() );
 
@@ -110,7 +110,7 @@ public class Exploder
         }
         try
         {
-            Path temporaryLocation = Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() );
+            Path temporaryLocation = Files.createTempDirectory( "exploder-" + UUID.randomUUID() );
             cleanup = true;
             targetDirectory = temporaryLocation.toFile();
         }
@@ -197,7 +197,7 @@ public class Exploder
                 useTemporaryDirectory();
             }
 
-            File target = new File ( Files.createTempDirectory( "exploder-" + UUID.randomUUID().toString() ).toFile(),
+            File target = new File ( Files.createTempDirectory( "exploder-" + UUID.randomUUID() ).toFile(),
                                      url.getFile().substring( url.getFile().lastIndexOf( '/' ) ) );
 
             logger.debug( "Downloading URL {} to {} unpacking to {}", url, target, targetDirectory );
@@ -215,7 +215,7 @@ public class Exploder
 
             internal_unpack( processor, target, targetDirectory );
         }
-        catch ( IOException | org.goots.jdownloader.utils.InternalException | URISyntaxException e )
+        catch ( IOException | org.goots.jdownloader.utils.InternalException | URISyntaxException | InterruptedException e )
         {
             throw new InternalException( "Error downloading remote URL", e );
         }
